@@ -5,48 +5,82 @@ using System.IO;
 
 public class Journal
 {
-    public List<Entry> _entries = new List<Entry>();
+    private List<Entry> _entries;
 
-    public void AddEntry(Entry newEntry)
+    public Journal()
     {
-        _entries.Add(newEntry);
+        _entries = new List<Entry>();
+    }
+
+    public void AddEntry(Entry entry)
+    {
+        _entries.Add(entry);
     }
 
     public void DisplayAll()
     {
+        if (_entries.Count == 0)
+        {
+            Console.WriteLine("Journal is empty. No entries to display.");
+            return;
+        }
+
+        Console.WriteLine("\n===== Journal Entries =====");
         foreach (Entry entry in _entries)
         {
             entry.Display();
         }
     }
 
-    public void SaveToFile(string fileName)
+    public void SaveToFile(string filename)
     {
-        using (StreamWriter outputFile = new StreamWriter(fileName))
+        try
         {
-            foreach (Entry entry in _entries)
+            using (StreamWriter writer = new StreamWriter(filename))
             {
-                outputFile.WriteLine($"{entry._date}~|~{entry._promptText}~|~{entry._entryText}");
+                foreach (Entry entry in _entries)
+                {
+                    writer.WriteLine(entry.ToFileString());
+                }
             }
+            Console.WriteLine($"Journal saved successfully to {filename}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving journal: {ex.Message}");
         }
     }
 
-    public void LoadFromFile(string fileName)
+    public void LoadFromFile(string filename)
     {
-        _entries.Clear();
-        
-        string[] lines = File.ReadAllLines(fileName);
-        
-        foreach (string line in lines)
+        try
         {
-            string[] parts = line.Split("~|~");
+            if (!File.Exists(filename))
+            {
+                Console.WriteLine($"File {filename} does not exist.");
+                return;
+            }
+
+            _entries.Clear();
             
-            Entry newEntry = new Entry();
-            newEntry._date = parts[0];
-            newEntry._promptText = parts[1];
-            newEntry._entryText = parts[2];
+            using (StreamReader reader = new StreamReader(filename))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        Entry entry = Entry.FromFileString(line);
+                        _entries.Add(entry);
+                    }
+                }
+            }
             
-            _entries.Add(newEntry);
+            Console.WriteLine($"Journal loaded successfully from {filename}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading journal: {ex.Message}");
         }
     }
 }
